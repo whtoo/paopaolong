@@ -1,0 +1,17 @@
+{
+  "name": "bouncing-ball-game",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "pixi.js": "^7.4.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.27",
+    "vite": "^5.2.0"
+  }
+}

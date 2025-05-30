@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PixiJS 弹弹球游戏</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    .game-container {
+      position: relative;
+    }
+    canvas {
+      border: 1px solid #333;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    .instructions {
+      margin-top: 20px;
+      max-width: 800px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+    }
+    .control-group {
+      text-align: center;
+    }
+    h3 {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <script type="module" src="/src/main.js"></script>
+  </div>
+  
+  <div class="instructions">
+    <h2>泡泡龙游戏说明</h2>
+    <p>发射彩色泡泡，匹配3个或更多相同颜色的泡泡即可消除！</p>
+    
+    <div class="controls">
+      <div class="control-group">
+        <h3>鼠标/触摸控制</h3>
+        <p>移动鼠标调整角度，点击发射泡泡</p>
+      </div>
+      <div class="control-group">
+        <h3>键盘控制</h3>
+        <p>← → 调整角度，空格键发射泡泡</p>
+      </div>
+    </div>
+    
+    <p>关卡目标：消除所有泡泡即可通关！</p>
+  </div>
+</body>
+</html>
