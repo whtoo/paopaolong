@@ -2,9 +2,16 @@
   "name": "bouncing-ball-game",
   "version": "1.0.0",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "vite",
+    "start:dev": "vite --mode development",
+    "start:prod": "vite --mode production",
+    "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
+
+    "test": "playwright test",
+
+    "preview": "vite preview",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "pixi.js": "^7.4.0"

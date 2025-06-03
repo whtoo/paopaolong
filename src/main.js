@@ -484,7 +484,7 @@ app.ticker.add(() => {
       console.log(`[Ticker] 'shouldStick' is true. Entering adsorption logic. Shooting bubble at: x=${shootingBubble.x.toFixed(2)}, y=${shootingBubble.y.toFixed(2)}`);
       
       let bfsStartR, bfsStartC;
-      let "collisionType" = "unknown"; // For logging
+      let collisionType = "unknown"; // For logging
 
       if (collidedWithExistingBubble) {
           // Priority: Use the grid cell of the bubble that was hit as the starting point for BFS.
