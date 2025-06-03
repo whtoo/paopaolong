@@ -116,8 +116,8 @@ function getNeighborsForCell(r, c) {
     return neighbors;
 }
 
-function findNearestEmptyCellBFS(collisionWorldX, collisionWorldY, initialGridR, initialGridC, maxDepth = 4) {
-    console.log(`[findNearestEmptyCellBFS] Start search from initialGrid: [${initialGridR}, ${initialGridC}], collisionPoint: (${collisionWorldX.toFixed(2)}, ${collisionWorldY.toFixed(2)})`);
+function findNearestEmptyCellBFS(collisionWorldX, collisionWorldY, initialGridR, initialGridC, maxDepth = 6) {
+    console.log(`[findNearestEmptyCellBFS] Start search from initialGrid: [${initialGridR}, ${initialGridC}], collisionPoint: (${collisionWorldX.toFixed(2)}, ${collisionWorldY.toFixed(2)}), maxDepth: ${maxDepth}`);
     const queue = [{ r: initialGridR, c: initialGridC, depth: 0 }];
     const visited = new Set([`${initialGridR},${initialGridC}`]);
     let bestCell = null;
@@ -203,6 +203,32 @@ function createLevel(level) {
       bubbles[r][c] = { sprite: bubbleSprite, color: colorIdx, active: true, r, c };
     }
   }
+  // Immediately update gameState after creating a new level
+  window.gameState.bubbles = getActiveBubbleDataForGameState();
+  console.log('[createLevel] window.gameState.bubbles updated immediately.');
+}
+
+// Helper function to get simplified bubble data for gameState
+function getActiveBubbleDataForGameState() {
+    const activeBubblesData = [];
+    for (let r = 0; r < bubbles.length; r++) {
+        if (bubbles[r]) {
+            for (let c = 0; c < bubbles[r].length; c++) {
+                const bubble = bubbles[r][c];
+                if (bubble && bubble.active) {
+                    activeBubblesData.push({
+                        x: bubble.sprite.x,
+                        y: bubble.sprite.y,
+                        color: bubble.color, // Store the color index
+                        r: bubble.r,
+                        c: bubble.c,
+                        active: bubble.active // Should always be true here
+                    });
+                }
+            }
+        }
+    }
+    return activeBubblesData;
 }
 
 app.view.addEventListener('mousemove', (e) => {
@@ -455,26 +481,46 @@ app.ticker.add(() => {
 
 
     if (shouldStick) {
-      console.log(`[Ticker] 'shouldStick' is true. Entering adsorption logic. shootingBubble: x=${shootingBubble.x.toFixed(2)}, y=${shootingBubble.y.toFixed(2)}`);
-      console.log(`[Adsorption] Attempting to place bubble. Collision point approx: (${shootingBubble.x.toFixed(2)}, ${shootingBubble.y.toFixed(2)})`);
+      console.log(`[Ticker] 'shouldStick' is true. Entering adsorption logic. Shooting bubble at: x=${shootingBubble.x.toFixed(2)}, y=${shootingBubble.y.toFixed(2)}`);
       
-      // 确定BFS的起始搜索网格点
-      // 如果是与现有泡泡碰撞，BFS可以从被碰撞泡泡的邻居开始，或者从计算出的最近网格点开始
-      // 如果是撞顶，BFS从撞顶位置计算出的网格点开始
       let bfsStartR, bfsStartC;
-      if (collidedWithExistingBubble && collisionTargetR !== undefined && collisionTargetC !== undefined) {
-          // 如果与现有泡泡碰撞，可以尝试从被碰撞泡泡的周围开始搜索，或者从发射泡泡当前位置计算的网格点开始
+      let "collisionType" = "unknown"; // For logging
+
+      if (collidedWithExistingBubble) {
+          // Priority: Use the grid cell of the bubble that was hit as the starting point for BFS.
+          // Ensure collisionTargetR and collisionTargetC are defined (they should be by the collision detection loop).
+          if (collisionTargetR !== undefined && collisionTargetC !== undefined) {
+              bfsStartR = collisionTargetR;
+              bfsStartC = collisionTargetC;
+              collisionType = `bubble collision with [${collisionTargetR},${collisionTargetC}]`;
+              console.log(`[Adsorption] Bubble collision detected. Hit bubble at [${collisionTargetR},${collisionTargetC}]. BFS will start from this cell.`);
+          } else {
+              // Fallback if collisionTargetR/C are somehow undefined, though this shouldn't happen.
+              // Use the shooting bubble's current grid position as a less ideal fallback.
+              const currentGridPos = getGridCoords(shootingBubble.x, shootingBubble.y);
+              bfsStartR = currentGridPos.row;
+              bfsStartC = currentGridPos.col;
+              collisionType = `bubble collision (fallback) at bubble pos [${bfsStartR},${bfsStartC}]`;
+              console.warn(`[Adsorption] Bubble collision, but collisionTargetR/C undefined. BFS starting from shooting bubble's grid pos: [${bfsStartR},${bfsStartC}]`);
+          }
+      } else if (shootingBubble.y <= BUBBLE_START_Y + BUBBLE_RADIUS) { // Only consider top collision if no bubble was hit
+          const topGridPos = getGridCoords(shootingBubble.x, shootingBubble.y);
+          bfsStartR = Math.max(0, topGridPos.row); // Ensure row is not negative
+          bfsStartC = topGridPos.col;
+          collisionType = `top wall collision at [${bfsStartR},${bfsStartC}]`;
+          console.log(`[Adsorption] Top wall collision detected. BFS starting from grid [${bfsStartR},${bfsStartC}] calculated from bubble position.`);
+      } else {
+          // This case should ideally not be reached if shouldStick is true.
+          // It implies shouldStick was true but neither of the handled conditions were met.
+          // Default to shooting bubble's current position.
           const currentGridPos = getGridCoords(shootingBubble.x, shootingBubble.y);
           bfsStartR = currentGridPos.row;
           bfsStartC = currentGridPos.col;
-          console.log(`[Adsorption] BFS starting near collided bubble [${collisionTargetR},${collisionTargetC}], or current pos [${bfsStartR},${bfsStartC}]`);
-      } else { // 撞顶的情况
-          const topGridPos = getGridCoords(shootingBubble.x, shootingBubble.y);
-          bfsStartR = Math.max(0, topGridPos.row); // 确保行不为负
-          bfsStartC = topGridPos.col;
-          console.log(`[Adsorption] BFS starting from top collision at grid [${bfsStartR},${bfsStartC}]`);
+          collisionType = `unknown (shouldStick was true but no specific collision type matched) at bubble pos [${bfsStartR},${bfsStartC}]`;
+          console.error(`[Adsorption] 'shouldStick' is true, but no specific collision condition matched. Defaulting BFS start to shooting bubble's grid pos: [${bfsStartR},${bfsStartC}]`);
       }
-      console.log(`[Adsorption] Calling findNearestEmptyCellBFS with: collisionX=${shootingBubble.x.toFixed(2)}, collisionY=${shootingBubble.y.toFixed(2)}, startR=${bfsStartR}, startC=${bfsStartC}`);
+
+      console.log(`[Adsorption] Initiating BFS. Collision Type: ${collisionType}. Collision Point (shooting bubble): (${shootingBubble.x.toFixed(2)}, ${shootingBubble.y.toFixed(2)}). BFS Start Grid: [${bfsStartR}, ${bfsStartC}]`);
 
       const emptyCell = findNearestEmptyCellBFS(shootingBubble.x, shootingBubble.y, bfsStartR, bfsStartC);
 
@@ -555,17 +601,5 @@ app.ticker.add(() => {
   
   // 更新全局游戏状态
   window.gameState.cannon.x = shooter.x;
-  // 收集所有活跃泡泡
-  const activeBubbles = [];
-  for (let r = 0; r < bubbles.length; r++) {
-    if (bubbles[r]) {
-      for (let c = 0; c < bubbles[r].length; c++) {
-        const bubble = bubbles[r][c];
-        if (bubble && bubble.active) {
-          activeBubbles.push(bubble);
-        }
-      }
-    }
-  }
-  window.gameState.bubbles = activeBubbles;
+  window.gameState.bubbles = getActiveBubbleDataForGameState();
 });
